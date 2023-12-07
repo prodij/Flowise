@@ -1,28 +1,69 @@
-version: '3.1'
+version: '3.8'
 
 services:
+    db:
+        image: postgres:14.1-alpine
+        restart: always
+        environment:
+        - POSTGRES_USER=${DATABASE_USER}
+        - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+        ports:
+        - '${DATABASE_PORT}:${DATABASE_PORT}'
+        volumes: 
+        - db:/var/lib/postgresql/data
+    # cache:
+    #     image: redis:6.2-alpine
+    #     restart: always
+    #     ports:
+    #     - '6379:6379'
+    #     command: redis-server --save 20 1 --loglevel warning
+    #     volumes: 
+    #     - cache:/data
+    redis-stack:
+        image: "redis/redis-stack"
+        ports:
+        - "6379:6379"
+        restart: always
+        volumes: 
+        - ~/.redis:/data
     flowise:
         image: flowiseai/flowise
         restart: always
+        depends_on:
+            - db
+            - cache
         environment:
             - PORT=${PORT}
             - FLOWISE_USERNAME=${FLOWISE_USERNAME}
             - FLOWISE_PASSWORD=${FLOWISE_PASSWORD}
             - DEBUG=${DEBUG}
-            - DATABASE_PATH=${DATABASE_PATH}
+            - DATABASE_PATH=${POSTGRES_PATH}
             - DATABASE_TYPE=${DATABASE_TYPE}
             - DATABASE_PORT=${DATABASE_PORT}
             - DATABASE_HOST=${DATABASE_HOST}
-            - DATABASE_NAME=${DATABASE_NAME}
+            # - DATABASE_NAME=${DATABASE_NAME}
             - DATABASE_USER=${DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            - REDIS_HOST=${REDIS_HOST}
+            - REDIS_PORT=${REDIS_PORT}
+            - REDIS_PASSWORD=${REDIS_PASSWORD}
             - APIKEY_PATH=${APIKEY_PATH}
             - SECRETKEY_PATH=${SECRETKEY_PATH}
             - FLOWISE_SECRETKEY_OVERWRITE=${FLOWISE_SECRETKEY_OVERWRITE}
             - LOG_LEVEL=${LOG_LEVEL}
             - LOG_PATH=${LOG_PATH}
+        links:
+            - db
+            - redis
         ports:
             - '${PORT}:${PORT}'
         volumes:
             - ~/.flowise:/root/.flowise
         command: /bin/sh -c "sleep 3; flowise start"
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+volumes:
+    db:
+        driver: local
+    cache:
+        driver: local
