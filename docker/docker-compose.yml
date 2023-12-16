@@ -7,31 +7,26 @@ services:
         environment:
         - POSTGRES_USER=${DATABASE_USER}
         - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+        - POSTGRES_DB=${ama_flow_db}
         ports:
         - '${DATABASE_PORT}:${DATABASE_PORT}'
         volumes: 
-        - db:/var/lib/postgresql/data
-    # cache:
-    #     image: redis:6.2-alpine
-    #     restart: always
-    #     ports:
-    #     - '6379:6379'
-    #     command: redis-server --save 20 1 --loglevel warning
-    #     volumes: 
-    #     - cache:/data
+        - ~/db:/var/lib/postgresql/data
     redis-stack:
-        image: "redis/redis-stack"
+        image: "redis/redis-stack:latest"
+        environment:
+        - REDIS_ARGS=--save 3602 1 --save 302 100 --save 62 10000
         ports:
         - "6379:6379"
         restart: always
         volumes: 
-        - ~/.redis:/data
+        - ~/.redis:/root/redis-data
     flowise:
         image: flowiseai/flowise
         restart: always
         depends_on:
             - db
-            - cache
+            - redis-stack
         environment:
             - PORT=${PORT}
             - FLOWISE_USERNAME=${FLOWISE_USERNAME}
@@ -41,7 +36,7 @@ services:
             - DATABASE_TYPE=${DATABASE_TYPE}
             - DATABASE_PORT=${DATABASE_PORT}
             - DATABASE_HOST=${DATABASE_HOST}
-            # - DATABASE_NAME=${DATABASE_NAME}
+            - DATABASE_NAME=${DATABASE_NAME}
             - DATABASE_USER=${DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
             - REDIS_HOST=${REDIS_HOST}
@@ -54,7 +49,7 @@ services:
             - LOG_PATH=${LOG_PATH}
         links:
             - db
-            - redis
+            - redis-stack
         ports:
             - '${PORT}:${PORT}'
         volumes:
@@ -65,5 +60,5 @@ services:
 volumes:
     db:
         driver: local
-    cache:
+    redis-stack:
         driver: local
