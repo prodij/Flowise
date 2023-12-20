@@ -7,7 +7,7 @@ services:
         environment:
         - POSTGRES_USER=${DATABASE_USER}
         - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-        - POSTGRES_DB=${ama_flow_db}
+        - POSTGRES_DB=${DATABASE_NAME}
         ports:
         - '${DATABASE_PORT}:${DATABASE_PORT}'
         volumes: 
@@ -22,7 +22,7 @@ services:
         volumes: 
         - ~/.redis:/root/redis-data
     flowise:
-        image: flowiseai/flowise
+        image: flowiseai/flowise:latest
         restart: always
         depends_on:
             - db
